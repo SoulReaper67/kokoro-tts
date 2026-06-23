@@ -21,7 +21,7 @@ def synthesize():
         text = data.get('text', '')
         if not text:
             return jsonify({"error": "Texte manquant"}), 400
-        samples, sample_rate = kokoro.create(text, voice="ff_siwis", speed=1.0, lang="fr")
+        samples, sample_rate = kokoro.create(text, voice="ff_siwis", speed=1.0)
         audio_buffer = io.BytesIO()
         sf.write(audio_buffer, samples, sample_rate, format='WAV')
         audio_buffer.seek(0)
