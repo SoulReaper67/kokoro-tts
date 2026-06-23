@@ -1,0 +1,4 @@
+flask
+kokoro
+soundfile
+torch
