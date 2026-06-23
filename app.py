@@ -13,7 +13,6 @@ CORS(app)
 kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
 
 def split_text(text, max_chars=80):
-    """Découpe le texte en phrases courtes"""
     phrases = re.split(r'(?<=[.!?])\s+', text.strip())
     chunks = []
     current = ""
@@ -44,24 +43,25 @@ def synthesize():
             return jsonify({"error": "Texte manquant"}), 400
 
         chunks = split_text(text)
-        all_audio = []
+        audio_buffer = io.BytesIO()
         sample_rate = 24000
+        first = True
 
         for chunk in chunks:
             samples, sr = kokoro.create(chunk, voice=voice, speed=speed)
-            all_audio.append(samples)
             sample_rate = sr
+            chunk_int16 = (samples * 32767).astype(np.int16)
 
-        # Assemble tous les morceaux
-        final_audio = np.concatenate(all_audio)
+            if first:
+                sf.write(audio_buffer, chunk_int16, sample_rate, format='WAV', subtype='PCM_16')
+                first = False
+            else:
+                # Ajoute juste les samples bruts après le header WAV
+                audio_buffer.write(chunk_int16.tobytes())
 
-        # Convertir en int16 pour économiser la RAM
-        final_audio_int16 = (final_audio * 32767).astype(np.int16)
+            del samples, chunk_int16
 
-        audio_buffer = io.BytesIO()
-        sf.write(audio_buffer, final_audio_int16, sample_rate, format='WAV', subtype='PCM_16')
         audio_buffer.seek(0)
-
         return send_file(audio_buffer, mimetype='audio/wav')
 
     except Exception as e:
