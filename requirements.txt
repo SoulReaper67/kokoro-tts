@@ -1,4 +1,4 @@
 flask
-kokoro
+kokoro-onnx
 soundfile
-torch
+numpy

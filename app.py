@@ -1,13 +1,11 @@
 from flask import Flask, request, send_file, jsonify
-from kokoro import KPipeline
+from kokoro_onnx import Kokoro
 import soundfile as sf
 import io
 import os
 
 app = Flask(__name__)
-
-# Chargement du modèle au démarrage
-pipeline = KPipeline(lang_code='fr')
+kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
 
 @app.route('/', methods=['GET'])
 def health():
@@ -18,20 +16,16 @@ def synthesize():
     try:
         data = request.get_json()
         text = data.get('text', '')
-
         if not text:
             return jsonify({"error": "Texte manquant"}), 400
 
-        audio_buffer = io.BytesIO()
-        for _, _, audio in pipeline(text, voice='ff_siwis'):
-            sf.write(audio_buffer, audio, 24000, format='WAV')
+        samples, sample_rate = kokoro.create(text, voice="ff_siwis", speed=1.0, lang="fr")
 
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, samples, sample_rate, format='WAV')
         audio_buffer.seek(0)
-        return send_file(
-            audio_buffer,
-            mimetype='audio/wav',
-            as_attachment=False
-        )
+
+        return send_file(audio_buffer, mimetype='audio/wav')
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
