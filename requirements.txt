@@ -3,3 +3,4 @@ flask-cors
 kokoro-onnx
 soundfile
 numpy
+misaki[fr]
